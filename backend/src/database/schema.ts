@@ -22,3 +22,17 @@ export const flags = pgTable("flags", {
 
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const flagTargets = pgTable("flag_targets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  flagId: uuid("flag_id")
+    .notNull()
+    .references(() => flags.id),
+
+  userId: varchar("user_id", {
+    length: 255,
+  }).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
