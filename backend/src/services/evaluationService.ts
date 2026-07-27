@@ -1,11 +1,12 @@
-import { findFlag } from "./flagService";
+import { getFlagByKey } from "../repositories/flagRepository";
+import { isTargeted } from "../repositories/targetRepository";
 
-export async function evaluateFlag(key: string, user: string) {
-  const flag = await findFlag(key);
+export async function evaluateFlag(flagKey: string, userId: string) {
+  const flag = await getFlagByKey(flagKey);
 
   if (!flag) {
     return {
-      flag: key,
+      flag: flagKey,
       enabled: false,
       reason: "FLAG_NOT_FOUND",
     };
@@ -13,14 +14,24 @@ export async function evaluateFlag(key: string, user: string) {
 
   if (!flag.enabled) {
     return {
-      flag: key,
+      flag: flagKey,
       enabled: false,
       reason: "FLAG_DISABLED",
     };
   }
 
+  const targeted = await isTargeted(flag.id, userId);
+
+  if (targeted) {
+    return {
+      flag: flagKey,
+      enabled: true,
+      reason: "TARGET_MATCH",
+    };
+  }
+
   return {
-    flag: key,
+    flag: flagKey,
     enabled: true,
     reason: "FLAG_ENABLED",
   };
