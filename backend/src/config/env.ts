@@ -2,8 +2,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const env = {
-  port: Number(process.env.PORT ?? 4000),
+const environmentValue =
+  process.env.FEATURE_FLAG_ENVIRONMENTS || "staging,production";
 
-  databaseUrl: process.env.DATABASE_URL ?? "",
-};
+export const environments = environmentValue
+  .split(",")
+  .map((environment) => environment.trim())
+  .filter(Boolean);
+
+export function isValidEnvironment(environment: string): boolean {
+  return environments.includes(environment);
+}
