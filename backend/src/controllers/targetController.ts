@@ -7,7 +7,8 @@ import {
 
 export async function addTarget(req: Request, res: Response) {
   try {
-    const { key } = req.params;
+    const keyParam = req.params.key;
+    const key = Array.isArray(keyParam) ? keyParam[0] : keyParam;
     const { userId } = req.body;
 
     const target = await addUserTarget(key, userId);
@@ -22,7 +23,11 @@ export async function addTarget(req: Request, res: Response) {
 
 export async function deleteTarget(req: Request, res: Response) {
   try {
-    const { key, userId } = req.params;
+    const keyParam = req.params.key;
+    const userIdParam = req.params.userId;
+
+    const key = Array.isArray(keyParam) ? keyParam[0] : keyParam;
+    const userId = Array.isArray(userIdParam) ? userIdParam[0] : userIdParam;
 
     const result = await removeUserTarget(key, userId);
 
@@ -36,7 +41,8 @@ export async function deleteTarget(req: Request, res: Response) {
 
 export async function listTargets(req: Request, res: Response) {
   try {
-    const { key } = req.params;
+    const keyParam = req.params.key;
+    const key = Array.isArray(keyParam) ? keyParam[0] : keyParam;
 
     const targets = await getUserTargets(key);
 

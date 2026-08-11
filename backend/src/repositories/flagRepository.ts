@@ -11,9 +11,9 @@ export async function getFlags() {
 }
 
 export async function getFlagByKey(key: string) {
-  const result = await db.select().from(flags).where(eq(flags.key, key));
+  const [flag] = await db.select().from(flags).where(eq(flags.key, key));
 
-  return result[0];
+  return flag;
 }
 
 export async function updateFlag(key: string, enabled: boolean) {
@@ -24,4 +24,18 @@ export async function updateFlag(key: string, enabled: boolean) {
     })
     .where(eq(flags.key, key))
     .returning();
+}
+export async function updateRolloutPercentage(
+  key: string,
+  rolloutPercentage: number,
+) {
+  const [flag] = await db
+    .update(flags)
+    .set({
+      rolloutPercentage,
+    })
+    .where(eq(flags.key, key))
+    .returning();
+
+  return flag;
 }

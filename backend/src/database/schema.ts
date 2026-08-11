@@ -5,8 +5,8 @@ import {
   text,
   boolean,
   timestamp,
+  integer,
 } from "drizzle-orm/pg-core";
-
 export const flags = pgTable("flags", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -19,6 +19,8 @@ export const flags = pgTable("flags", {
   description: text("description").notNull(),
 
   enabled: boolean("enabled").notNull().default(false),
+
+  rolloutPercentage: integer("rollout_percentage").notNull().default(0),
 
   createdAt: timestamp("created_at").defaultNow(),
 });

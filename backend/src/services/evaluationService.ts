@@ -1,5 +1,6 @@
 import { getFlagByKey } from "../repositories/flagRepository";
 import { isTargeted } from "../repositories/targetRepository";
+import { getRolloutBucket } from "../utils/rolloutHash";
 
 export async function evaluateFlag(flagKey: string, userId: string) {
   const flag = await getFlagByKey(flagKey);
@@ -30,9 +31,35 @@ export async function evaluateFlag(flagKey: string, userId: string) {
     };
   }
 
+  if (flag.rolloutPercentage === 0) {
+    return {
+      flag: flagKey,
+      enabled: false,
+      reason: "ROLLOUT_EXCLUDED",
+    };
+  }
+
+  if (flag.rolloutPercentage === 100) {
+    return {
+      flag: flagKey,
+      enabled: true,
+      reason: "ROLLOUT_MATCH",
+    };
+  }
+
+  const bucket = getRolloutBucket(userId, flagKey);
+
+  if (bucket < flag.rolloutPercentage) {
+    return {
+      flag: flagKey,
+      enabled: true,
+      reason: "ROLLOUT_MATCH",
+    };
+  }
+
   return {
     flag: flagKey,
-    enabled: true,
-    reason: "FLAG_ENABLED",
+    enabled: false,
+    reason: "ROLLOUT_EXCLUDED",
   };
 }

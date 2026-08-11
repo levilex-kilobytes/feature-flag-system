@@ -15,6 +15,13 @@
       "when": 1784897957955,
       "tag": "0001_orange_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785138293011,
+      "tag": "0002_lush_storm",
+      "breakpoints": true
     }
   ]
 }
