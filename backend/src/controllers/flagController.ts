@@ -61,13 +61,27 @@ export async function toggle(req: Request, res: Response) {
     const rawKey = req.params.key;
     const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
+    const rawEnvironment = req.params.environment;
+
+    const environment = Array.isArray(rawEnvironment)
+      ? rawEnvironment[0]
+      : rawEnvironment;
+
     if (!key) {
       throw new Error("Flag key is required.");
     }
 
+    if (!environment) {
+      throw new Error("Environment is required.");
+    }
+
     const { enabled } = req.body;
 
-    const result = await toggleFlag(key, enabled);
+    if (typeof enabled !== "boolean") {
+      throw new Error("enabled must be a boolean.");
+    }
+
+    const result = await toggleFlag(key, environment, enabled);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -84,16 +98,23 @@ export async function updateRollout(req: Request, res: Response) {
     const rawKey = req.params.key;
     const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
+    const rawEnvironment = req.params.environment;
+
+    const environment = Array.isArray(rawEnvironment)
+      ? rawEnvironment[0]
+      : rawEnvironment;
+
     if (!key) {
       throw new Error("Flag key is required.");
     }
 
+    if (!environment) {
+      throw new Error("Environment is required.");
+    }
+
     const { rolloutPercentage } = req.body;
 
-    console.log("rolloutPercentage:", rolloutPercentage);
-    console.log("type:", typeof rolloutPercentage);
-
-    const result = await updateFlagRollout(key, rolloutPercentage);
+    const result = await updateFlagRollout(key, environment, rolloutPercentage);
 
     return res.status(200).json(result);
   } catch (error) {

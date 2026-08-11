@@ -1,8 +1,8 @@
-import { db } from "../database/connection";
-import { flags } from "../database/schema";
 import { eq } from "drizzle-orm";
+import { db } from "../database/connection";
+import { flags, flagEnvironments } from "../database/schema";
 
-export async function createFlag(data: any) {
+export async function createFlag(data: { key: string; description: string }) {
   return db.insert(flags).values(data).returning();
 }
 
@@ -11,31 +11,63 @@ export async function getFlags() {
 }
 
 export async function getFlagByKey(key: string) {
-  const [flag] = await db.select().from(flags).where(eq(flags.key, key));
+  const result = await db.select().from(flags).where(eq(flags.key, key));
 
-  return flag;
+  return result[0];
 }
 
-export async function updateFlag(key: string, enabled: boolean) {
+export async function getFlagEnvironment(flagId: string, environment: string) {
+  const result = await db
+    .select()
+    .from(flagEnvironments)
+    .where(eq(flagEnvironments.flagId, flagId));
+
+  return result.find((item) => item.environment === environment);
+}
+
+export async function createFlagEnvironment(data: {
+  flagId: string;
+  environment: string;
+  enabled?: boolean;
+  rolloutPercentage?: number;
+}) {
   return db
-    .update(flags)
+    .insert(flagEnvironments)
+    .values({
+      flagId: data.flagId,
+      environment: data.environment,
+      enabled: data.enabled ?? false,
+      rolloutPercentage: data.rolloutPercentage ?? 0,
+    })
+    .returning();
+}
+
+export async function updateFlagEnvironment(
+  flagId: string,
+  environment: string,
+  enabled: boolean,
+) {
+  return db
+    .update(flagEnvironments)
     .set({
       enabled,
     })
-    .where(eq(flags.key, key))
+    .where(eq(flagEnvironments.flagId, flagId))
     .returning();
 }
+
 export async function updateRolloutPercentage(
-  key: string,
+  flagId: string,
+  environment: string,
   rolloutPercentage: number,
 ) {
-  const [flag] = await db
-    .update(flags)
+  const result = await db
+    .update(flagEnvironments)
     .set({
       rolloutPercentage,
     })
-    .where(eq(flags.key, key))
+    .where(eq(flagEnvironments.flagId, flagId))
     .returning();
 
-  return flag;
+  return result[0];
 }

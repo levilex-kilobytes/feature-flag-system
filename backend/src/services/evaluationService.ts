@@ -1,47 +1,80 @@
-import { getFlagByKey } from "../repositories/flagRepository";
+import {
+  getFlagByKey,
+  getFlagEnvironment,
+} from "../repositories/flagRepository";
 import { isTargeted } from "../repositories/targetRepository";
 import { getRolloutBucket } from "../utils/rolloutHash";
+import { environments } from "../config/env";
 
-export async function evaluateFlag(flagKey: string, userId: string) {
+export async function evaluateFlag(
+  flagKey: string,
+  userId: string,
+  environment: string,
+) {
+  if (!environments.includes(environment)) {
+    return {
+      flag: flagKey,
+      environment,
+      enabled: false,
+      reason: "INVALID_ENVIRONMENT",
+    };
+  }
+
   const flag = await getFlagByKey(flagKey);
 
   if (!flag) {
     return {
       flag: flagKey,
+      environment,
       enabled: false,
       reason: "FLAG_NOT_FOUND",
     };
   }
 
-  if (!flag.enabled) {
+  const flagEnvironment = await getFlagEnvironment(flag.id, environment);
+
+  if (!flagEnvironment) {
     return {
       flag: flagKey,
+      environment,
+      enabled: false,
+      reason: "FLAG_ENVIRONMENT_NOT_CONFIGURED",
+    };
+  }
+
+  if (!flagEnvironment.enabled) {
+    return {
+      flag: flagKey,
+      environment,
       enabled: false,
       reason: "FLAG_DISABLED",
     };
   }
 
-  const targeted = await isTargeted(flag.id, userId);
+  const targeted = await isTargeted(flagEnvironment.id, userId);
 
   if (targeted) {
     return {
       flag: flagKey,
+      environment,
       enabled: true,
       reason: "TARGET_MATCH",
     };
   }
 
-  if (flag.rolloutPercentage === 0) {
+  if (flagEnvironment.rolloutPercentage === 0) {
     return {
       flag: flagKey,
+      environment,
       enabled: false,
       reason: "ROLLOUT_EXCLUDED",
     };
   }
 
-  if (flag.rolloutPercentage === 100) {
+  if (flagEnvironment.rolloutPercentage === 100) {
     return {
       flag: flagKey,
+      environment,
       enabled: true,
       reason: "ROLLOUT_MATCH",
     };
@@ -49,9 +82,10 @@ export async function evaluateFlag(flagKey: string, userId: string) {
 
   const bucket = getRolloutBucket(userId, flagKey);
 
-  if (bucket < flag.rolloutPercentage) {
+  if (bucket < flagEnvironment.rolloutPercentage) {
     return {
       flag: flagKey,
+      environment,
       enabled: true,
       reason: "ROLLOUT_MATCH",
     };
@@ -59,6 +93,7 @@ export async function evaluateFlag(flagKey: string, userId: string) {
 
   return {
     flag: flagKey,
+    environment,
     enabled: false,
     reason: "ROLLOUT_EXCLUDED",
   };

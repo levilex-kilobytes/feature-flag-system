@@ -1,34 +1,46 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../database/connection";
-import { flagTargets } from "../database/schema";
+import { flagTargets, flagEnvironments } from "../database/schema";
 
-export async function addTarget(flagId: string, userId: string) {
-  const [target] = await db
+export async function addTarget(flagEnvironmentId: string, userId: string) {
+  return db
     .insert(flagTargets)
     .values({
-      flagId,
+      flagEnvironmentId,
       userId,
     })
     .returning();
-
-  return target;
 }
 
-export async function removeTarget(flagId: string, userId: string) {
-  await db
+export async function removeTarget(flagEnvironmentId: string, userId: string) {
+  return db
     .delete(flagTargets)
-    .where(and(eq(flagTargets.flagId, flagId), eq(flagTargets.userId, userId)));
+    .where(
+      and(
+        eq(flagTargets.flagEnvironmentId, flagEnvironmentId),
+        eq(flagTargets.userId, userId),
+      ),
+    )
+    .returning();
 }
 
-export async function getTargets(flagId: string) {
-  return db.select().from(flagTargets).where(eq(flagTargets.flagId, flagId));
-}
-
-export async function isTargeted(flagId: string, userId: string) {
-  const [target] = await db
+export async function getTargets(flagEnvironmentId: string) {
+  return db
     .select()
     .from(flagTargets)
-    .where(and(eq(flagTargets.flagId, flagId), eq(flagTargets.userId, userId)));
+    .where(eq(flagTargets.flagEnvironmentId, flagEnvironmentId));
+}
 
-  return Boolean(target);
+export async function isTargeted(flagEnvironmentId: string, userId: string) {
+  const result = await db
+    .select()
+    .from(flagTargets)
+    .where(
+      and(
+        eq(flagTargets.flagEnvironmentId, flagEnvironmentId),
+        eq(flagTargets.userId, userId),
+      ),
+    );
+
+  return result.length > 0;
 }

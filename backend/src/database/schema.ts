@@ -7,6 +7,7 @@ import {
   timestamp,
   integer,
 } from "drizzle-orm/pg-core";
+
 export const flags = pgTable("flags", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -18,6 +19,20 @@ export const flags = pgTable("flags", {
 
   description: text("description").notNull(),
 
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const flagEnvironments = pgTable("flag_environments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  flagId: uuid("flag_id")
+    .notNull()
+    .references(() => flags.id),
+
+  environment: varchar("environment", {
+    length: 100,
+  }).notNull(),
+
   enabled: boolean("enabled").notNull().default(false),
 
   rolloutPercentage: integer("rollout_percentage").notNull().default(0),
@@ -28,9 +43,9 @@ export const flags = pgTable("flags", {
 export const flagTargets = pgTable("flag_targets", {
   id: uuid("id").defaultRandom().primaryKey(),
 
-  flagId: uuid("flag_id")
+  flagEnvironmentId: uuid("flag_environment_id")
     .notNull()
-    .references(() => flags.id),
+    .references(() => flagEnvironments.id),
 
   userId: varchar("user_id", {
     length: 255,

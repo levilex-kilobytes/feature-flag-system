@@ -6,11 +6,23 @@ export async function evaluate(req: Request, res: Response) {
     const rawKey = req.params.key;
     const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
+    const rawEnvironment = req.params.environment;
+
+    const environment = Array.isArray(rawEnvironment)
+      ? rawEnvironment[0]
+      : rawEnvironment;
+
     const { userId } = req.query;
 
     if (!key) {
       return res.status(400).json({
         message: "Flag key is required.",
+      });
+    }
+
+    if (!environment) {
+      return res.status(400).json({
+        message: "Environment is required.",
       });
     }
 
@@ -20,13 +32,13 @@ export async function evaluate(req: Request, res: Response) {
       });
     }
 
-    const result = await evaluateFlag(key, userId);
+    const result = await evaluateFlag(key, userId, environment);
 
     return res.status(200).json(result);
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
+    return res.status(400).json({
       message: error instanceof Error ? error.message : "Something went wrong.",
     });
   }
