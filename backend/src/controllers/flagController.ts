@@ -59,13 +59,15 @@ export async function getFlag(req: Request, res: Response) {
 export async function toggle(req: Request, res: Response) {
   try {
     const rawKey = req.params.key;
-    const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
-
     const rawEnvironment = req.params.environment;
+
+    const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
     const environment = Array.isArray(rawEnvironment)
       ? rawEnvironment[0]
       : rawEnvironment;
+
+    const { enabled, actorId } = req.body;
 
     if (!key) {
       throw new Error("Flag key is required.");
@@ -75,13 +77,11 @@ export async function toggle(req: Request, res: Response) {
       throw new Error("Environment is required.");
     }
 
-    const { enabled } = req.body;
-
-    if (typeof enabled !== "boolean") {
-      throw new Error("enabled must be a boolean.");
+    if (!actorId) {
+      throw new Error("Actor ID is required.");
     }
 
-    const result = await toggleFlag(key, environment, enabled);
+    const result = await toggleFlag(key, environment, enabled, actorId);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -96,13 +96,15 @@ export async function toggle(req: Request, res: Response) {
 export async function updateRollout(req: Request, res: Response) {
   try {
     const rawKey = req.params.key;
-    const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
-
     const rawEnvironment = req.params.environment;
+
+    const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
     const environment = Array.isArray(rawEnvironment)
       ? rawEnvironment[0]
       : rawEnvironment;
+
+    const { rolloutPercentage, actorId } = req.body;
 
     if (!key) {
       throw new Error("Flag key is required.");
@@ -112,9 +114,16 @@ export async function updateRollout(req: Request, res: Response) {
       throw new Error("Environment is required.");
     }
 
-    const { rolloutPercentage } = req.body;
+    if (!actorId) {
+      throw new Error("Actor ID is required.");
+    }
 
-    const result = await updateFlagRollout(key, environment, rolloutPercentage);
+    const result = await updateFlagRollout(
+      key,
+      environment,
+      rolloutPercentage,
+      actorId
+    );
 
     return res.status(200).json(result);
   } catch (error) {

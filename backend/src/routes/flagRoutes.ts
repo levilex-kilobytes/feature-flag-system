@@ -6,12 +6,15 @@ import {
   toggle,
   updateRollout,
 } from "../controllers/flagController";
+import { getFlagHistory } from "../controllers/flagHistoryController";
 
 const router = Router();
 
 router.post("/", createFlag);
 
 router.get("/", getFlags);
+
+router.get("/:key/history", getFlagHistory);
 
 router.get("/:key", getFlag);
 

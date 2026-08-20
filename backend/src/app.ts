@@ -3,6 +3,7 @@ import cors from "cors";
 
 import flagRoutes from "./routes/flagRoutes";
 import evaluationRoutes from "./routes/evaluationRoutes";
+import targetRoutes from "./routes/targetRoutes";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.get("/", (_req, res) => {
 
 app.use("/flags", flagRoutes);
 app.use("/evaluate", evaluationRoutes);
+app.use("/flags", targetRoutes);
 
 export default app;
