@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import {
   createNewFlag,
   getAllFlags,
@@ -9,7 +10,25 @@ import {
 
 export async function createFlag(req: Request, res: Response) {
   try {
-    const result = await createNewFlag(req.body);
+    const { key, description, actorId } = req.body;
+
+    if (!key) {
+      return res.status(400).json({
+        message: "Flag key is required.",
+      });
+    }
+
+    if (!description) {
+      return res.status(400).json({
+        message: "Flag description is required.",
+      });
+    }
+
+    const result = await createNewFlag({
+      key,
+      description,
+      actorId,
+    });
 
     return res.status(201).json(result);
   } catch (error) {
@@ -21,7 +40,7 @@ export async function createFlag(req: Request, res: Response) {
   }
 }
 
-export async function getFlags(req: Request, res: Response) {
+export async function getFlags(_req: Request, res: Response) {
   try {
     const flags = await getAllFlags();
 
@@ -38,10 +57,13 @@ export async function getFlags(req: Request, res: Response) {
 export async function getFlag(req: Request, res: Response) {
   try {
     const rawKey = req.params.key;
+
     const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
 
     if (!key) {
-      throw new Error("Flag key is required.");
+      return res.status(400).json({
+        message: "Flag key is required.",
+      });
     }
 
     const flag = await getSingleFlag(key);
@@ -51,7 +73,7 @@ export async function getFlag(req: Request, res: Response) {
     console.error(error);
 
     return res.status(404).json({
-      message: error instanceof Error ? error.message : "Something went wrong.",
+      message: error instanceof Error ? error.message : "Flag not found.",
     });
   }
 }
@@ -70,15 +92,27 @@ export async function toggle(req: Request, res: Response) {
     const { enabled, actorId } = req.body;
 
     if (!key) {
-      throw new Error("Flag key is required.");
+      return res.status(400).json({
+        message: "Flag key is required.",
+      });
     }
 
     if (!environment) {
-      throw new Error("Environment is required.");
+      return res.status(400).json({
+        message: "Environment is required.",
+      });
+    }
+
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({
+        message: "Enabled must be a boolean.",
+      });
     }
 
     if (!actorId) {
-      throw new Error("Actor ID is required.");
+      return res.status(400).json({
+        message: "Actor ID is required.",
+      });
     }
 
     const result = await toggleFlag(key, environment, enabled, actorId);
@@ -107,22 +141,34 @@ export async function updateRollout(req: Request, res: Response) {
     const { rolloutPercentage, actorId } = req.body;
 
     if (!key) {
-      throw new Error("Flag key is required.");
+      return res.status(400).json({
+        message: "Flag key is required.",
+      });
     }
 
     if (!environment) {
-      throw new Error("Environment is required.");
+      return res.status(400).json({
+        message: "Environment is required.",
+      });
+    }
+
+    if (rolloutPercentage === undefined || rolloutPercentage === null) {
+      return res.status(400).json({
+        message: "Rollout percentage is required.",
+      });
     }
 
     if (!actorId) {
-      throw new Error("Actor ID is required.");
+      return res.status(400).json({
+        message: "Actor ID is required.",
+      });
     }
 
     const result = await updateFlagRollout(
       key,
       environment,
       rolloutPercentage,
-      actorId
+      actorId,
     );
 
     return res.status(200).json(result);

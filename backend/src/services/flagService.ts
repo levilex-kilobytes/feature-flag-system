@@ -7,7 +7,9 @@ import {
   updateFlagEnvironment,
   updateRolloutPercentage,
 } from "../repositories/flagRepository";
+
 import { environments } from "../config/env";
+
 import { recordFlagHistory } from "./flagHistoryService";
 
 export async function createNewFlag(data: {
@@ -26,6 +28,7 @@ export async function createNewFlag(data: {
     description: data.description,
   });
 
+  // Create configuration for every environment
   for (const environment of environments) {
     await createFlagEnvironment({
       flagId: flag.id,
@@ -35,6 +38,7 @@ export async function createNewFlag(data: {
     });
   }
 
+  // Record flag creation in history
   await recordFlagHistory({
     key: data.key,
     actorId: data.actorId ?? "system",
@@ -55,7 +59,26 @@ export async function createNewFlag(data: {
 }
 
 export async function getAllFlags() {
-  return getFlags();
+  const flags = await getFlags();
+
+  const flagsWithEnvironments = await Promise.all(
+    flags.map(async (flag) => {
+      const flagEnvironments = await Promise.all(
+        environments.map(async (environment) => {
+          const config = await getFlagEnvironment(flag.id, environment);
+
+          return config;
+        }),
+      );
+
+      return {
+        ...flag,
+        environments: flagEnvironments.filter((config) => config !== undefined),
+      };
+    }),
+  );
+
+  return flagsWithEnvironments;
 }
 
 export async function getSingleFlag(key: string) {
@@ -65,7 +88,18 @@ export async function getSingleFlag(key: string) {
     throw new Error("Flag not found.");
   }
 
-  return flag;
+  const flagEnvironments = await Promise.all(
+    environments.map(async (environment) => {
+      const config = await getFlagEnvironment(flag.id, environment);
+
+      return config;
+    }),
+  );
+
+  return {
+    ...flag,
+    environments: flagEnvironments.filter((config) => config !== undefined),
+  };
 }
 
 export async function toggleFlag(
@@ -157,7 +191,7 @@ export async function updateFlagRollout(
   await recordFlagHistory({
     key,
     environment,
-    actorId: "system",
+    actorId: actorId ?? "system",
     changeType: "ROLLOUT_PERCENTAGE_CHANGED",
     beforeValue: {
       rolloutPercentage: previousRolloutPercentage,
