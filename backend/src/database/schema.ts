@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const flags = pgTable("flags", {
@@ -52,4 +53,30 @@ export const flagTargets = pgTable("flag_targets", {
   }).notNull(),
 
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const flagHistory = pgTable("flag_history", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  flagId: uuid("flag_id")
+    .notNull()
+    .references(() => flags.id),
+
+  environment: varchar("environment", {
+    length: 100,
+  }),
+
+  actorId: varchar("actor_id", {
+    length: 255,
+  }).notNull(),
+
+  changeType: varchar("change_type", {
+    length: 100,
+  }).notNull(),
+
+  beforeValue: jsonb("before_value"),
+
+  afterValue: jsonb("after_value"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

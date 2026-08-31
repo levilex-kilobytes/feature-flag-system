@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../database/connection";
 import { flags, flagEnvironments } from "../database/schema";
 
@@ -20,9 +20,14 @@ export async function getFlagEnvironment(flagId: string, environment: string) {
   const result = await db
     .select()
     .from(flagEnvironments)
-    .where(eq(flagEnvironments.flagId, flagId));
+    .where(
+      and(
+        eq(flagEnvironments.flagId, flagId),
+        eq(flagEnvironments.environment, environment),
+      ),
+    );
 
-  return result.find((item) => item.environment === environment);
+  return result[0];
 }
 
 export async function createFlagEnvironment(data: {
@@ -52,7 +57,12 @@ export async function updateFlagEnvironment(
     .set({
       enabled,
     })
-    .where(eq(flagEnvironments.flagId, flagId))
+    .where(
+      and(
+        eq(flagEnvironments.flagId, flagId),
+        eq(flagEnvironments.environment, environment),
+      ),
+    )
     .returning();
 }
 
@@ -66,7 +76,12 @@ export async function updateRolloutPercentage(
     .set({
       rolloutPercentage,
     })
-    .where(eq(flagEnvironments.flagId, flagId))
+    .where(
+      and(
+        eq(flagEnvironments.flagId, flagId),
+        eq(flagEnvironments.environment, environment),
+      ),
+    )
     .returning();
 
   return result[0];

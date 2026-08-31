@@ -7,7 +7,10 @@ import {
   updateFlagEnvironment,
   updateRolloutPercentage,
 } from "../repositories/flagRepository";
+
 import { environments } from "../config/env";
+
+import { recordFlagHistory } from "./flagHistoryService";
 
 export async function createNewFlag(data: {
   key: string;
@@ -25,6 +28,7 @@ export async function createNewFlag(data: {
     description: data.description,
   });
 
+  // Create configuration for every environment
   for (const environment of environments) {
     await createFlagEnvironment({
       flagId: flag.id,
@@ -34,6 +38,19 @@ export async function createNewFlag(data: {
     });
   }
 
+  // Record flag creation in history
+  await recordFlagHistory({
+    key: data.key,
+    actorId: data.actorId ?? "system",
+    changeType: "FLAG_CREATED",
+    beforeValue: null,
+    afterValue: {
+      key: data.key,
+      description: data.description,
+      environments,
+    },
+  });
+
   return {
     message: "Flag created successfully.",
     flag,
@@ -42,7 +59,26 @@ export async function createNewFlag(data: {
 }
 
 export async function getAllFlags() {
-  return getFlags();
+  const flags = await getFlags();
+
+  const flagsWithEnvironments = await Promise.all(
+    flags.map(async (flag) => {
+      const flagEnvironments = await Promise.all(
+        environments.map(async (environment) => {
+          const config = await getFlagEnvironment(flag.id, environment);
+
+          return config;
+        }),
+      );
+
+      return {
+        ...flag,
+        environments: flagEnvironments.filter((config) => config !== undefined),
+      };
+    }),
+  );
+
+  return flagsWithEnvironments;
 }
 
 export async function getSingleFlag(key: string) {
@@ -52,13 +88,25 @@ export async function getSingleFlag(key: string) {
     throw new Error("Flag not found.");
   }
 
-  return flag;
+  const flagEnvironments = await Promise.all(
+    environments.map(async (environment) => {
+      const config = await getFlagEnvironment(flag.id, environment);
+
+      return config;
+    }),
+  );
+
+  return {
+    ...flag,
+    environments: flagEnvironments.filter((config) => config !== undefined),
+  };
 }
 
 export async function toggleFlag(
   key: string,
   environment: string,
   enabled: boolean,
+  actorId: string,
 ) {
   if (!environments.includes(environment)) {
     throw new Error(
@@ -78,7 +126,22 @@ export async function toggleFlag(
     throw new Error("Flag environment configuration not found.");
   }
 
+  const previousEnabled = flagEnvironment.enabled;
+
   const result = await updateFlagEnvironment(flag.id, environment, enabled);
+
+  await recordFlagHistory({
+    key,
+    environment,
+    actorId: actorId ?? "system",
+    changeType: "FLAG_TOGGLED",
+    beforeValue: {
+      enabled: previousEnabled,
+    },
+    afterValue: {
+      enabled,
+    },
+  });
 
   return {
     message: "Flag updated successfully.",
@@ -91,6 +154,7 @@ export async function updateFlagRollout(
   key: string,
   environment: string,
   rolloutPercentage: number,
+  actorId: string,
 ) {
   if (!environments.includes(environment)) {
     throw new Error(
@@ -116,11 +180,26 @@ export async function updateFlagRollout(
     throw new Error("Flag environment configuration not found.");
   }
 
+  const previousRolloutPercentage = flagEnvironment.rolloutPercentage;
+
   const updatedFlag = await updateRolloutPercentage(
     flag.id,
     environment,
     percentage,
   );
+
+  await recordFlagHistory({
+    key,
+    environment,
+    actorId: actorId ?? "system",
+    changeType: "ROLLOUT_PERCENTAGE_CHANGED",
+    beforeValue: {
+      rolloutPercentage: previousRolloutPercentage,
+    },
+    afterValue: {
+      rolloutPercentage: percentage,
+    },
+  });
 
   return {
     message: "Rollout percentage updated successfully.",
